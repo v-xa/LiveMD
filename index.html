@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LiveMD</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" disabled id="prism-dark">
+  <style>
+    :root {
+      --bg-color: #ffffff;
+      --text-color: #333333;
+      --border-color: #dddddd;
+      --header-bg: #f3f4f6;
+      --button-hover: #e5e7eb;
+    }
+
+    .dark-mode {
+      --bg-color: #1f2937;
+      --text-color: #f9fafb;
+      --border-color: #4b5563;
+      --header-bg: #111827;
+      --button-hover: #374151;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      line-height: 1.6;
+      color: var(--text-color);
+      background-color: var(--bg-color);
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      background-color: var(--header-bg);
+      padding: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .app-title {
+      font-size: 1.25rem;
+      font-weight: bold;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    button {
+      background-color: transparent;
+      border: 1px solid var(--border-color);
+      border-radius: 0.25rem;
+      padding: 0.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-color);
+    }
+
+    button:hover {
+      background-color: var(--button-hover);
+    }
+
+    button svg {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+
+    .editor-container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .editor-pane, .preview-pane {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+    }
+
+    .editor-pane {
+      border-right: 1px solid var(--border-color);
+    }
+
+    #markdown-input {
+      width: 100%;
+      height: 100%;
+      border: none;
+      outline: none;
+      resize: none;
+      font-family: monospace;
+      font-size: 1rem;
+      line-height: 1.6;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
+
+    #markdown-preview {
+      height: 100%;
+    }
+
+    /* md preview styles */
+    #markdown-preview h1, #markdown-preview h2, #markdown-preview h3,
+    #markdown-preview h4, #markdown-preview h5, #markdown-preview h6 {
+      margin-top: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    #markdown-preview h1 {
+      font-size: 2rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.5rem;
+    }
+
+    #markdown-preview h2 {
+      font-size: 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 0.3rem;
+    }
+
+    #markdown-preview p {
+      margin-bottom: 1rem;
+    }
+
+    #markdown-preview ul, #markdown-preview ol {
+      margin-bottom: 1rem;
+      padding-left: 2rem;
+    }
+
+    #markdown-preview blockquote {
+      border-left: 0.25rem solid var(--border-color);
+      padding-left: 1rem;
+      margin-left: 0;
+      margin-bottom: 1rem;
+      color: #6b7280;
+    }
+
+    #markdown-preview pre {
+      margin-bottom: 1rem;
+      border-radius: 0.25rem;
+      overflow: auto;
+    }
+
+    #markdown-preview code {
+      font-family: monospace;
+      border-radius: 0.25rem;
+    }
+
+    #markdown-preview table {
+      border-collapse: collapse;
+      margin-bottom: 1rem;
+      width: 100%;
+    }
+
+    #markdown-preview table th, #markdown-preview table td {
+      border: 1px solid var(--border-color);
+      padding: 0.5rem;
+    }
+
+    #markdown-preview img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    #markdown-preview hr {
+      border: none;
+      border-top: 1px solid var(--border-color);
+      margin: 1.5rem 0;
+    }
+
+    /* file input styles */
+    .file-input {
+      display: none;
+    }
+
+    /* dnd zone */
+    .drag-active {
+      border: 2px dashed #4f46e5 !important;
+      background-color: rgba(79, 70, 229, 0.1);
+    }
+
+    @media (max-width: 768px) {
+      .editor-container {
+        flex-direction: column;
+      }
+      
+      .editor-pane {
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="app-title">LiveMD</div>
+      <div class="toolbar">
+        <button id="theme-toggle" title="Toggle dark/light mode">
+          <svg id="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+          <svg id="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
+        <button id="export-html" title="Export as HTML">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+        </button>
+        <button id="export-pdf" title="Export as PDF">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+        </button>
+        <button id="github-link" title="GitHub" onclick="window.open('https://github.com/v-xa/LiveMD', '_blank')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+         </svg>
+        </button>
+        </button>
+        <input type="file" id="file-input" class="file-input" accept=".md, .markdown, .txt">
+        <button id="import-file" title="Import Markdown file">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+        </button>
+      </div>
+    </header>
+    <div class="editor-container">
+      <div class="editor-pane">
+        <textarea id="markdown-input" placeholder="Type Markdown here..."></textarea>
+      </div>
+      <div class="preview-pane">
+        <div id="markdown-preview"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-html.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Elements
+      const markdownInput = document.getElementById('markdown-input');
+      const markdownPreview = document.getElementById('markdown-preview');
+      const themeToggle = document.getElementById('theme-toggle');
+      const moonIcon = document.getElementById('moon-icon');
+      const sunIcon = document.getElementById('sun-icon');
+      const exportHtmlBtn = document.getElementById('export-html');
+      const exportPdfBtn = document.getElementById('export-pdf');
+      const importFileBtn = document.getElementById('import-file');
+      const fileInput = document.getElementById('file-input');
+      const editorPane = document.querySelector('.editor-pane');
+      const prismDarkTheme = document.getElementById('prism-dark');
+      
+      // Initial content from local storage or default
+      const savedContent = localStorage.getItem('markdownEditorContent');
+      const initialContent = savedContent || `# hey, welcome to LiveMD
+
+## Features
+- Live Preview – See your formatted text as you type
+- Syntax Highlighting – Code blocks are highlighted for better readability
+- Dark/Light Mode – Toggle between themes
+- Auto Save – Your content is saved automatically
+- Export Options – Download as PDF or HTML
+- Drag & Drop – Import Markdown files by dragging them
+
+## Example Code Block
+\`\`\`javascript
+function hello() {
+  console.log("Hello, Markdown!");
+}
+\`\`\`
+
+## Table Example
+| Feature | Description |
+|---------|-------------|
+| Live Preview | See changes as you type |
+| Syntax Highlighting | Colorful code blocks |
+| Local Storage | Never lose your work |
+
+## Image Example
+![Markdown Logo](https://markdown-here.com/img/icon256.png)
+
+> Try editing this content to see the live preview in action!
+`;
+      
+      markdownInput.value = initialContent;
+      
+      // Setup marked options
+      marked.setOptions({
+        breaks: true,
+        highlight: function(code, lang) {
+          if (Prism.languages[lang]) {
+            return Prism.highlight(code, Prism.languages[lang], lang);
+          }
+          return code;
+        }
+      });
+      
+      // Function to update preview
+      function updatePreview() {
+        const markdown = markdownInput.value;
+        markdownPreview.innerHTML = marked.parse(markdown);
+        // Save to local storage
+        localStorage.setItem('markdownEditorContent', markdown);
+      }
+      
+      // Initial render
+      updatePreview();
+      
+      // Event listeners
+      markdownInput.addEventListener('input', updatePreview);
+      
+      // Theme toggle
+      function toggleTheme() {
+        document.body.classList.toggle('dark-mode');
+        const isDarkMode = document.body.classList.contains('dark-mode');
+        localStorage.setItem('markdownEditorDarkMode', isDarkMode);
+        
+        // Toggle Prism theme
+        prismDarkTheme.disabled = !isDarkMode;
+        
+        // Toggle icons
+        moonIcon.style.display = isDarkMode ? 'none' : 'block';
+        sunIcon.style.display = isDarkMode ? 'block' : 'none';
+        
+        // Re-render to update syntax highlighting
+        updatePreview();
+      }
+      
+      // Check for saved theme preference
+      if (localStorage.getItem('markdownEditorDarkMode') === 'true') {
+        toggleTheme();
+      }
+      
+      themeToggle.addEventListener('click', toggleTheme);
+      
+      // Export as HTML
+      exportHtmlBtn.addEventListener('click', function() {
+        const htmlContent = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>LiveMD - Exported HTML</title>
+            <style>
+              body {
+                font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+                line-height: 1.6;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 2rem;
+              }
+              pre {
+                background-color: #f5f5f5;
+                padding: 1rem;
+                border-radius: 0.25rem;
+                overflow: auto;
+              }
+              code {
+                font-family: monospace;
+              }
+              table {
+                border-collapse: collapse;
+                width: 100%;
+              }
+              table th, table td {
+                border: 1px solid #ddd;
+                padding: 0.5rem;
+              }
+              img {
+                max-width: 100%;
+              }
+            </style>
+          </head>
+          <body>
+            ${markdownPreview.innerHTML}
+          </body>
+          </html>
+        `;
+        
+        downloadFile(htmlContent, 'markdown-export.html', 'text/html');
+      });
+      
+      // Export as PDF
+      exportPdfBtn.addEventListener('click', function() {
+        const element = markdownPreview;
+        const opt = {
+          margin: 1,
+          filename: 'markdown-export.pdf',
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2 },
+          jsPDF: { unit: 'cm', format: 'a4', orientation: 'portrait' }
+        };
+        
+        html2pdf().set(opt).from(element).save();
+      });
+      
+      // Import file
+      importFileBtn.addEventListener('click', function() {
+        fileInput.click();
+      });
+      
+      fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+          readFile(file);
+        }
+      });
+      
+      // Function to download files
+      function downloadFile(content, fileName, contentType) {
+        const a = document.createElement('a');
+        const file = new Blob([content], { type: contentType });
+        a.href = URL.createObjectURL(file);
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }
+      
+      // Function to read uploaded files
+      function readFile(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          markdownInput.value = e.target.result;
+          updatePreview();
+        };
+        reader.readAsText(file);
+      }
+      
+      // Drag and drop functionality
+      editorPane.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        editorPane.classList.add('drag-active');
+      });
+      
+      editorPane.addEventListener('dragleave', function() {
+        editorPane.classList.remove('drag-active');
+      });
+      
+      editorPane.addEventListener('drop', function(e) {
+        e.preventDefault();
+        editorPane.classList.remove('drag-active');
+        
+        const files = e.dataTransfer.files;
+        if (files.length && (files[0].name.endsWith('.md') || files[0].name.endsWith('.markdown') || files[0].name.endsWith('.txt'))) {
+          readFile(files[0]);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
