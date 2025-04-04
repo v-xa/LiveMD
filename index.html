@@ -263,7 +263,7 @@
     </header>
     <div class="editor-container">
       <div class="editor-pane">
-        <textarea id="markdown-input" placeholder="Type Markdown here..."></textarea>
+        <textarea id="markdown-input" placeholder="hey! welcome. | github.com/v-xa/LiveMD | type your markdown here."></textarea>
       </div>
       <div class="preview-pane">
         <div id="markdown-preview"></div>
@@ -330,7 +330,7 @@ function hello() {
       
       markdownInput.value = initialContent;
       
-      // Setup marked options
+      // marked options
       marked.setOptions({
         breaks: true,
         highlight: function(code, lang) {
@@ -341,45 +341,44 @@ function hello() {
         }
       });
       
-      // Function to update preview
+      // preview update 
       function updatePreview() {
         const markdown = markdownInput.value;
         markdownPreview.innerHTML = marked.parse(markdown);
-        // Save to local storage
+        // localstorage saving
         localStorage.setItem('markdownEditorContent', markdown);
       }
       
-      // Initial render
+      // init render
       updatePreview();
       
-      // Event listeners
+      // listiners
       markdownInput.addEventListener('input', updatePreview);
       
-      // Theme toggle
+      // theme toggles
       function toggleTheme() {
         document.body.classList.toggle('dark-mode');
         const isDarkMode = document.body.classList.contains('dark-mode');
         localStorage.setItem('markdownEditorDarkMode', isDarkMode);
         
-        // Toggle Prism theme
         prismDarkTheme.disabled = !isDarkMode;
         
-        // Toggle icons
+        // toggles
         moonIcon.style.display = isDarkMode ? 'none' : 'block';
         sunIcon.style.display = isDarkMode ? 'block' : 'none';
         
-        // Re-render to update syntax highlighting
+        // re-render
         updatePreview();
       }
       
-      // Check for saved theme preference
+      // check for theme preference
       if (localStorage.getItem('markdownEditorDarkMode') === 'true') {
         toggleTheme();
       }
       
       themeToggle.addEventListener('click', toggleTheme);
       
-      // Export as HTML
+      // html
       exportHtmlBtn.addEventListener('click', function() {
         const htmlContent = `
           <!DOCTYPE html>
@@ -427,7 +426,7 @@ function hello() {
         downloadFile(htmlContent, 'markdown-export.html', 'text/html');
       });
       
-      // Export as PDF
+      // pdf export
       exportPdfBtn.addEventListener('click', function() {
         const element = markdownPreview;
         const opt = {
@@ -441,7 +440,7 @@ function hello() {
         html2pdf().set(opt).from(element).save();
       });
       
-      // Import file
+      // import
       importFileBtn.addEventListener('click', function() {
         fileInput.click();
       });
@@ -453,7 +452,7 @@ function hello() {
         }
       });
       
-      // Function to download files
+      // func to download files
       function downloadFile(content, fileName, contentType) {
         const a = document.createElement('a');
         const file = new Blob([content], { type: contentType });
@@ -463,7 +462,7 @@ function hello() {
         URL.revokeObjectURL(a.href);
       }
       
-      // Function to read uploaded files
+      // reading func
       function readFile(file) {
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -473,7 +472,7 @@ function hello() {
         reader.readAsText(file);
       }
       
-      // Drag and drop functionality
+      // dnd functions
       editorPane.addEventListener('dragover', function(e) {
         e.preventDefault();
         editorPane.classList.add('drag-active');
